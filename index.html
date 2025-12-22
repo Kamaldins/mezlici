@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mežlīči | Forest Sanctuary</title>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Lenis for smooth scrolling -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Font: Manrope (Clean, legible, modern) -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        forest: {
+                            50: '#F5F7F5',
+                            100: '#E6EBE6',
+                            800: '#2C332C',
+                            900: '#1A211A', 
+                            950: '#0F120F',
+                        },
+                        earth: { 
+                            400: '#C2A888',
+                            500: '#A68A64',
+                            600: '#8C7352'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Manrope"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Reset */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+        
+        body { 
+            background-color: #0F120F;
+            color: #F5F7F5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Loading */
+        #preloader {
+            position: fixed; inset: 0; background: #0F120F; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Typography Utilities */
+        .text-balance { text-wrap: balance; }
+        
+        /* Navigation */
+        .nav-backdrop {
+            background: rgba(15, 18, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Burger Menu */
+        .burger-line { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .menu-open .burger-top { transform: translateY(6px) rotate(45deg); }
+        .menu-open .burger-mid { opacity: 0; }
+        .menu-open .burger-bot { transform: translateY(-6px) rotate(-45deg); }
+
+        /* Gallery Grid */
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1rem;
+        }
+        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        
+        .gallery-item {
+            break-inside: avoid;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            cursor: zoom-in;
+        }
+        
+        .gallery-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .gallery-item:hover .gallery-overlay { opacity: 1; }
+        .gallery-item:hover img { transform: scale(1.03); }
+        .gallery-img { transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1); }
+
+        /* Lightbox */
+        #lightbox {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #lightbox.open { opacity: 1; visibility: visible; }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-earth-500 selection:text-white">
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="flex flex-col items-center gap-4">
+            <span class="text-xl font-medium tracking-[0.2em] animate-pulse">MEŽLĪČI</span>
+            <div class="w-32 h-[1px] bg-white/10 relative overflow-hidden rounded-full">
+                <div id="loader-bar" class="absolute inset-0 bg-earth-500 transform -translate-x-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <header id="header" class="fixed top-0 w-full z-50 px-6 py-4 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-lg font-bold tracking-[0.15em] uppercase hover:text-earth-400 transition-colors">Mežlīči</a>
+            
+            <div class="flex items-center gap-6">
+                <a href="tel:+37129294621" class="hidden md:block text-xs font-medium tracking-widest hover:text-earth-400 transition-colors">+371 29294621</a>
+                <button id="menu-toggle" class="w-10 h-10 flex flex-col justify-center items-end gap-1.5 z-50">
+                    <span class="burger-line burger-top w-6 h-[2px] bg-white rounded-full"></span>
+                    <span class="burger-line burger-mid w-4 h-[2px] bg-white rounded-full"></span>
+                    <span class="burger-line burger-bot w-6 h-[2px] bg-white rounded-full"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="full-menu" class="fixed inset-0 z-40 bg-forest-950/98 backdrop-blur-xl hidden opacity-0 flex items-center justify-center">
+        <nav class="text-center space-y-8">
+            <a href="#home" class="menu-link block text-4xl md:text-5xl font-light hover:text-earth-400 transition-colors">Home</a>
+            <a href="#about" class="menu-link block text-4xl md:text-5xl font-light hover:text-earth-400 transition-colors">Amenities</a>
+            <a href="#gallery" class="menu-link block text-4xl md:text-5xl font-light hover:text-earth-400 transition-colors">Gallery</a>
+            <a href="#contact" class="menu-link block text-4xl md:text-5xl font-light hover:text-earth-400 transition-colors">Contact</a>
+        </nav>
+    </div>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="relative h-screen flex items-end pb-24 md:pb-32 px-6 overflow-hidden">
+            <!-- Background Image -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://i.ibb.co/mVH0z4S8/Whats-App-Image-2025-10-25-at-16-40-18.jpg" 
+                     class="w-full h-full object-cover opacity-60 scale-105" 
+                     id="hero-bg" alt="Mežlīči Exterior">
+                <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            </div>
+
+            <div class="relative z-10 max-w-7xl mx-auto w-full">
+                <span class="block text-earth-400 text-xs font-bold tracking-[0.2em] uppercase mb-4 reveal-hero">Tome Region, Latvia</span>
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-medium leading-[1.1] mb-6 reveal-hero">
+                    A Quiet Place <br>
+                    <span class="text-white/60">by the Daugava.</span>
+                </h1>
+                <p class="max-w-md text-gray-300 text-lg reveal-hero">
+                    Recover your strength and relax in a secluded forest home.
+                </p>
+                <div class="mt-8 reveal-hero">
+                    <a href="#contact" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-forest-950 rounded-full text-sm font-bold tracking-wider hover:bg-earth-400 hover:text-white transition-colors">
+                        Book Your Stay
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- About / Amenities Section -->
+        <section id="about" class="py-24 px-6 bg-forest-900">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-medium mb-8">What Awaits You</h2>
+                        <p class="text-gray-400 mb-8 leading-relaxed">
+                            Mežlīči is equipped for both quiet solitude and celebration. Located on the left bank of the Daugava near the Ķegums HES, we offer a complete escape into nature.
+                        </p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
+                            <!-- Amenity Items -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Sauna for relaxation</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Hot tub with hydromassage</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Attic sleeping (10 guests)</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Fully equipped kitchen</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Boat & Launch site</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Enclosed celebration terrace</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Tent spots in meadow</span>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-1.5 h-1.5 mt-2 rounded-full bg-earth-500 flex-shrink-0"></div>
+                                <span class="text-gray-200">Swimming dock</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intro Image -->
+                    <div class="relative h-[400px] md:h-auto rounded-lg overflow-hidden">
+                        <img src="https://i.ibb.co/hxtqWnNq/Whats-App-Image-2025-10-25-at-16-40-19-4.jpg" class="w-full h-full object-cover" alt="Mežlīči River View">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery" class="py-24 px-4 md:px-6 bg-forest-950">
+            <div class="max-w-7xl mx-auto">
+                <div class="mb-12 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-medium">Gallery</h2>
+                        <p class="text-gray-500 mt-2 text-sm">Tap any image to expand</p>
+                    </div>
+                </div>
+
+                <div class="masonry-grid" id="gallery-grid">
+                    <!-- Images inserted via JS to keep HTML clean -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Location & Map -->
+        <section class="h-[50vh] md:h-[60vh] relative w-full grayscale invert">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2166.0!2d24.7231!3d56.7223!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTbCsDQzJzIwLjUiTiAyNMKwNDMnMjMuMiJF!5e0!3m2!1sen!2slv!4v1625680000000!5m2!1sen!2slv" 
+                width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy">
+            </iframe>
+            <div class="absolute bottom-6 left-6 bg-white/90 backdrop-blur text-black p-4 rounded shadow-lg max-w-xs z-10">
+                <h4 class="font-bold text-sm uppercase mb-1">Mežlīči</h4>
+                <p class="text-xs">Tomes pagasts, Latvia</p>
+                <a href="https://waze.com/ul/hs0ec2x7x7" target="_blank" class="block mt-3 text-xs font-bold text-blue-600 hover:underline">Open in Waze</a>
+            </div>
+        </section>
+
+        <!-- Pricing & Contact -->
+        <section id="contact" class="py-24 px-6 bg-forest-50 text-forest-950">
+            <div class="max-w-4xl mx-auto text-center">
+                <span class="text-earth-600 font-bold tracking-[0.2em] text-xs uppercase mb-4 block">Reservations</span>
+                <h2 class="text-4xl md:text-6xl font-medium mb-6">Plan Your Visit</h2>
+                <p class="text-lg md:text-xl text-forest-800/70 mb-10 max-w-2xl mx-auto">
+                    "Mēs palīdzēsim rezervēt perfektu brīvdienu vietu."<br>
+                    <span class="text-sm mt-2 block">(We will help you book the perfect holiday spot)</span>
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left max-w-2xl mx-auto mb-16">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Check-in / Out</span>
+                        <p class="text-xl font-medium">17:00 — 13:00</p>
+                        <p class="text-sm text-gray-500 mt-1">Advance booking required</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                         <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Host</span>
+                        <p class="text-xl font-medium">Andrejs</p>
+                        <a href="mailto:hello@mezlici.lv" class="text-sm text-earth-600 mt-1 block hover:underline">hello@mezlici.lv</a>
+                    </div>
+                </div>
+
+                <a href="tel:+37129294621" class="inline-flex items-center gap-3 px-8 py-4 bg-forest-950 text-white rounded-full text-lg font-medium hover:bg-earth-600 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
+                    <span>Call +371 29294621</span>
+                </a>
+            </div>
+            
+            <div class="max-w-3xl mx-auto mt-16 p-4 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="text-center mb-4 text-xs font-bold uppercase tracking-widest text-gray-400">Availability</div>
+                <iframe src="https://calendar.google.com/calendar/embed?src=8b6becdf2ad7c40fcee5c32b695484bf1ae9f1080d335739732474da77b9cbfd%40group.calendar.google.com&ctz=Europe%2FRiga&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&showTz=0" 
+                        style="border: 0" width="100%" height="400" frameborder="0" scrolling="no"></iframe>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-forest-950 text-white/40 py-12 px-6 text-center text-xs">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <p>© 2025 Brīvdienu māja "Mežlīči"</p>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-white">Privacy Policy</a>
+                    <span>Developed by Kamaltek</span>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Lightbox Overlay -->
+    <div id="lightbox" class="fixed inset-0 z-[100] bg-black/95 opacity-0 invisible flex items-center justify-center">
+        <button id="lightbox-close" class="absolute top-6 right-6 text-white/70 hover:text-white p-2">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <button id="lightbox-prev" class="absolute left-4 md:left-8 text-white/70 hover:text-white p-2 hidden md:block">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <button id="lightbox-next" class="absolute right-4 md:right-8 text-white/70 hover:text-white p-2 hidden md:block">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+        
+        <img id="lightbox-img" src="" alt="Full view" class="max-h-[90vh] max-w-[95vw] object-contain shadow-2xl">
+        <div class="absolute bottom-6 left-0 right-0 text-center text-white/60 text-sm">
+            <span id="lightbox-counter"></span>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA: Full Image List ---
+        const images = [
+            'https://i.ibb.co/mVH0z4S8/Whats-App-Image-2025-10-25-at-16-40-18.jpg',
+            'https://i.ibb.co/KcmJfL1n/Whats-App-Image-2025-10-25-at-16-40-16.jpg',
+            'https://i.ibb.co/NgjfgHkc/Whats-App-Image-2025-10-25-at-16-40-17-1.jpg',
+            'https://i.ibb.co/4gZrSHzK/Whats-App-Image-2025-10-25-at-16-40-17.jpg',
+            'https://i.ibb.co/Y4gC9R3Q/Whats-App-Image-2025-10-25-at-16-40-18-1.jpg',
+            'https://i.ibb.co/5XwtGY3v/Whats-App-Image-2025-10-25-at-16-40-18-2.jpg',
+            'https://i.ibb.co/hxtqWnNq/Whats-App-Image-2025-10-25-at-16-40-19-4.jpg',
+            'https://i.ibb.co/d4DR596B/Whats-App-Image-2025-10-25-at-16-40-18-4.jpg',
+            'https://i.ibb.co/gZMBL05C/Whats-App-Image-2025-10-25-at-16-40-18-5.jpg',
+            'https://i.ibb.co/tp1yRWNX/Whats-App-Image-2025-10-25-at-16-40-19-1.jpg',
+            'https://i.ibb.co/GQyfN4LS/Whats-App-Image-2025-10-25-at-16-40-19-2.jpg',
+            'https://i.ibb.co/fVr4nwTP/Whats-App-Image-2025-10-25-at-16-40-18-3.jpg',
+            'https://i.ibb.co/XxTn4dsr/Whats-App-Image-2025-10-25-at-16-40-19-3.jpg',
+            'https://i.ibb.co/hxztcMBq/Whats-App-Image-2025-10-25-at-16-40-19.jpg'
+        ];
+
+        // --- RENDER GALLERY ---
+        const galleryGrid = document.getElementById('gallery-grid');
+        
+        images.forEach((src, index) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item group';
+            div.innerHTML = `
+                <img src="${src}" class="w-full h-auto block gallery-img" loading="lazy" alt="Gallery image ${index + 1}">
+                <div class="gallery-overlay absolute inset-0 flex items-center justify-center">
+                    <span class="text-white text-xs font-bold uppercase tracking-widest border border-white/30 px-4 py-2 rounded-full backdrop-blur-sm">View</span>
+                </div>
+            `;
+            div.onclick = () => openLightbox(index);
+            galleryGrid.appendChild(div);
+        });
+
+        // --- LIGHTBOX LOGIC ---
+        let currentIndex = 0;
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const counter = document.getElementById('lightbox-counter');
+
+        function openLightbox(index) {
+            currentIndex = index;
+            updateLightbox();
+            lightbox.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Lock scroll
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function updateLightbox() {
+            lightboxImg.src = images[currentIndex];
+            counter.innerText = `${currentIndex + 1} / ${images.length}`;
+        }
+
+        function nextImage(e) {
+            e?.stopPropagation();
+            currentIndex = (currentIndex + 1) % images.length;
+            updateLightbox();
+        }
+
+        function prevImage(e) {
+            e?.stopPropagation();
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            updateLightbox();
+        }
+
+        // Event Listeners
+        document.getElementById('lightbox-close').onclick = closeLightbox;
+        document.getElementById('lightbox-next').onclick = nextImage;
+        document.getElementById('lightbox-prev').onclick = prevImage;
+        lightbox.onclick = (e) => { if(e.target === lightbox) closeLightbox(); };
+        
+        // Keyboard Nav
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+        });
+
+
+        // --- GSAP ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
+        
+        // Loader
+        window.onload = () => {
+            gsap.to("#loader-bar", { x: "0%", duration: 0.8 });
+            gsap.to("#preloader", { 
+                y: "-100%", duration: 0.8, delay: 0.6, ease: "power4.inOut",
+                onComplete: () => {
+                    initAnimations();
+                    document.getElementById('preloader').style.display = 'none';
+                }
+            });
+        };
+
+        function initAnimations() {
+            // Hero Text Reveal
+            gsap.from(".reveal-hero", {
+                y: 50, opacity: 0, duration: 1.2, stagger: 0.1, ease: "power3.out"
+            });
+            
+            // Header Scroll Bg
+            const header = document.getElementById('header');
+            window.addEventListener('scroll', () => {
+                if(window.scrollY > 50) header.classList.add('nav-backdrop', 'py-3');
+                else header.classList.remove('nav-backdrop', 'py-3');
+            });
+        }
+
+        // --- LENIS SCROLL ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // --- MOBILE MENU ---
+        const menuBtn = document.getElementById('menu-toggle');
+        const fullMenu = document.getElementById('full-menu');
+        const menuLinks = document.querySelectorAll('.menu-link');
+        let isMenuOpen = false;
+
+        menuBtn.addEventListener('click', () => {
+            isMenuOpen = !isMenuOpen;
+            if (isMenuOpen) {
+                document.body.classList.add('menu-open');
+                fullMenu.classList.remove('hidden');
+                gsap.to(fullMenu, { opacity: 1, duration: 0.3 });
+                lenis.stop();
+            } else {
+                document.body.classList.remove('menu-open');
+                gsap.to(fullMenu, { opacity: 0, duration: 0.3, onComplete: () => fullMenu.classList.add('hidden') });
+                lenis.start();
+            }
+        });
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                menuBtn.click();
+            });
+        });
+
+    </script>
+</body>
+</html>
